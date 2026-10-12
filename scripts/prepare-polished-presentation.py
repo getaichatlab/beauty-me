@@ -1,0 +1,15 @@
+from pathlib import Path
+root=Path(__file__).resolve().parents[1]/'presentation'/'.build'
+source=(root/'build-offer.mjs').read_text(encoding='utf-8')
+source=source.replace('Beauty-Me-Taklif-250-Final.pptx','Beauty-Me-Taklif-250-Sayqallangan.pptx').replace('candidate-offer.pptx','candidate-polished-offer.pptx').replace('validation-offer-final.json','validation-polished-offer.json')
+source=source.replace('Xizmatni tanlash, Telegram yoki\\ntelefon orqali bog‘lanish bir joyda.','Xizmatni tanlash, yozilish va\\ntelefon orqali aloqa bir joyda.')
+source=source.replace('Filtrlar, suratni kattalashtirish,\\nsalon haqida va aloqa sahifalari','Filtrlar, kattalashtirish va suratga\\nmos xizmatga darhol yozilish')
+source=source.replace('yozilish formasi va Telegram havolasi','yozilish formasi va qulay aloqa')
+source=source.replace('Holat, izoh, mas’ul xodim\\nva CSV eksport','Demo yozilish so‘rovi, holat,\\nizoh va mas’ul xodim')
+source=source.replace('Yozilish demo bosqichlarini ko‘rsatadi, haqiqiy ariza yubormaydi.','Yozilish faqat xizmat, sana va vaqt tanlovini shu tabdagi admin namunasiga o‘tkazadi. Ism, telefon va izoh saqlanmaydi; salonga hech narsa yuborilmaydi.')
+(root/'build-polished-offer.mjs').write_text(source,encoding='utf-8')
+source=(root/'check-offer.mjs').read_text(encoding='utf-8').replace('Beauty-Me-Taklif-250-Final.pptx','Beauty-Me-Taklif-250-Sayqallangan.pptx')
+(root/'check-polished-offer.mjs').write_text(source,encoding='utf-8')
+source=(root/'export-offer-pdf.py').read_text(encoding='utf-8').replace('Beauty-Me-Taklif-250.pdf','Beauty-Me-Taklif-250-Sayqallangan.pdf')
+(root/'export-polished-offer-pdf.py').write_text(source,encoding='utf-8')
+print('New presentation sources prepared; previous deliverables preserved.')

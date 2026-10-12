@@ -1,0 +1,15 @@
+import fs from 'node:fs/promises';
+import {chromium} from 'playwright';
+const root='D:/fr_sayt/beauty-me/presentation/.build/assets';
+const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+const context=await browser.newContext({viewport:{width:1360,height:900},deviceScaleFactor:1});
+const page=await context.newPage();
+const base='https://beauty-me-tashkent-demo.netlify.app';
+await page.goto(base+'/uz/',{waitUntil:'networkidle',timeout:60000});await page.waitForFunction(()=>document.fonts.status==='loaded',{timeout:30000});await page.waitForTimeout(1200);
+await page.screenshot({path:root+'/home-desktop.png'});
+await page.goto(base+'/admin/demo/',{waitUntil:'networkidle'});await page.waitForSelector('.a-demo-notice');await page.evaluate(()=>document.fonts.ready);await page.screenshot({path:root+'/admin-desktop.png'});
+const phone=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});const mobile=await phone.newPage();
+await mobile.goto(base+'/uz/',{waitUntil:'networkidle'});await mobile.waitForTimeout(1200);await mobile.screenshot({path:root+'/home-mobile.png'});
+await mobile.goto(base+'/uz/gallery/',{waitUntil:'networkidle'});await mobile.waitForTimeout(1000);await mobile.screenshot({path:root+'/gallery-mobile.png'});
+await fs.writeFile(root+'/sources.json',JSON.stringify({capturedAt:new Date().toISOString(),sources:['/uz/','/uz/gallery/','/admin/demo/'].map(p=>base+p)},null,2));
+await browser.close();console.log('Four real website/admin screenshots captured.');

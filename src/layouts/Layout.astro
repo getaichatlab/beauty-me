@@ -1,0 +1,57 @@
+---
+import '@fontsource/cormorant-garamond/400.css';
+import '@fontsource/cormorant-garamond/400-italic.css';
+import '@fontsource/manrope/400.css';
+import '@fontsource/manrope/600.css';
+import '../styles/creative.css';
+import '../styles/public-mobile.css';
+import '../styles/client-polish.css';
+import serifFont from '@fontsource/cormorant-garamond/files/cormorant-garamond-latin-400-normal.woff2?url';
+import italicFont from '@fontsource/cormorant-garamond/files/cormorant-garamond-latin-400-italic.woff2?url';
+import sansFont from '@fontsource/manrope/files/manrope-latin-400-normal.woff2?url';
+import {ClientRouter} from 'astro:transitions';
+import {brand as initialbrand} from '../config/brand';
+import {ui as initialui, route, type Lang } from '../data/content';
+const managedContent=Astro.locals.content;
+const brand=(managedContent?.brand||initialbrand) as typeof initialbrand;
+const ui=(managedContent?.ui||initialui) as typeof initialui;
+
+interface Props { lang:Lang; title:string; description?:string; path?:string; }
+const {lang,title,description=ui[lang].heroText,path=''}=Astro.props;
+const seo=managedContent?.seo[path];const pageTitle=seo?.title[lang]||title;const pageDescription=seo?.description[lang]||description;
+const t=ui[lang]; const other=lang==='uz'?'ru':'uz';
+const publicOrigin='https://beauty-me-tashkent-demo.netlify.app';
+const canonical=publicOrigin+route(lang,path);
+const links=[['services',t.navServices],['gallery',t.navWork],['about',t.navAbout],['contact',t.navContact]];
+---
+<!doctype html>
+<html lang={lang} style={managedContent?`--wine:${managedContent.theme.wine};--paper:${managedContent.theme.paper}`:undefined}>
+  <head>
+    <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+    <link rel="preload" href={serifFont} as="font" type="font/woff2" crossorigin/><link rel="preload" href={sansFont} as="font" type="font/woff2" crossorigin/>{path===''&&<link rel="preload" href={italicFont} as="font" type="font/woff2" crossorigin/>}
+    <ClientRouter fallback="swap"/>
+    <title>{pageTitle} · {brand.name}</title><meta name="description" content={pageDescription}/>
+    <meta name="robots" content="noindex,nofollow"/><meta name="theme-color" content="#4b182a"/>
+    <meta property="og:title" content={`${pageTitle} · ${brand.name}`}/><meta property="og:description" content={pageDescription}/><meta property="og:type" content="website"/><meta property="og:url" content={canonical}/><meta property="og:locale" content={lang==='uz'?'uz_UZ':'ru_RU'}/><meta property="og:image" content={`${publicOrigin}/media/beauty-me-share.png`}/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Beauty Me — Toshkent, Yunusobod"/><meta name="twitter:card" content="summary_large_image"/>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  </head>
+  <body class="public-site" data-page={path||'home'} data-tracking={managedContent?.trackingEnabled?'on':'off'} data-preview={Astro.locals.preview?'on':'off'}>
+    <a class="skip" href="#main">{lang==='uz'?'Asosiy mazmunga o‘tish':'Перейти к содержанию'}</a>
+    <div class="demo-bar"><span>{t.demo}</span><span>DEMO · {lang==='uz'?'Yozilish sinovi':'Тест записи'}</span></div>
+    <header class="header" transition:name="site-header">
+      <a class="brand" href={route(lang)} aria-label={`${brand.name} — ${t.home}`}>{managedContent?.logoMediaId&&managedContent.media.find(m=>m.id===managedContent.logoMediaId)?<img class="brand-logo" src={managedContent.media.find(m=>m.id===managedContent.logoMediaId)!.src} alt={brand.name}/>:brand.name}<span>{t.salon}</span></a>
+      <nav class="desktop-nav" aria-label={lang==='uz'?'Asosiy menyu':'Главное меню'}>{links.map(([p,label])=><a href={route(lang,p)} aria-current={path.startsWith(p)?'page':undefined}>{label}</a>)}</nav>
+      <div class="header-actions"><a class="language" href={route(other,path)} lang={other} aria-label={other==='ru'?'На русском':'O‘zbekcha'}>{other.toUpperCase()}</a><a class="button small header-book" href={route(lang,'booking')}>{t.book}<span aria-hidden="true">↗</span></a><button class="menu-button" aria-expanded="false" aria-controls="mobile-menu" aria-label={lang==='uz'?'Menyu':'Меню'}><span></span><span></span></button></div>
+    </header>
+    <dialog id="mobile-menu" class="menu-dialog" aria-label={lang==='uz'?'Asosiy menyu':'Главное меню'}><div class="menu-topbar"><span>{lang==='uz'?'MENYU':'МЕНЮ'}</span><button class="menu-close" aria-label={t.close}>×</button></div><div class="menu-content"><p class="eyebrow">{brand.city[lang]} / {brand.district[lang]}</p><span class="brand">{brand.name}</span><nav class="mobile-menu">{links.map(([p,label])=><a href={route(lang,p)}>{label}<span aria-hidden="true">↗</span></a>)}<a href={route(lang,'booking')}>{t.book}<span aria-hidden="true">↗</span></a></nav><a class="menu-contact" href={`tel:${brand.phoneHref}`}>{brand.phone}</a></div></dialog>
+    <main id="main"><slot/></main>
+    <footer class="footer"><div class="footer-top"><a class="brand" href={route(lang)}>{brand.name}<span>{t.footerLine}</span></a><a class="footer-phone" href={`tel:${brand.phoneHref}`}>{brand.phone}<span aria-hidden="true">↗</span></a></div><div class="footer-bottom"><span>© {new Date().getFullYear()} {brand.name} · {t.demo}</span><a href={brand.instagram} target="_blank" rel="noopener noreferrer">Instagram ↗</a><a href={brand.telegram} target="_blank" rel="noopener noreferrer">Telegram ↗</a><a href={route(lang,'privacy')}>{t.privacy}</a>{brand.mode==='demo'&&<a href="/admin/demo/">Admin demo ↗</a>}</div><div class="footer-wordmark" aria-hidden="true">{brand.name}</div></footer>
+    <div class="mobile-bottom"><a href={`tel:${brand.phoneHref}`}>{t.call}</a><a href={route(lang,'booking')}>{t.book} ↗</a></div>
+    <script>
+      import '../lib/interactions';
+      void import('../lib/motion').catch(()=>console.warn('Motion unavailable; essential controls remain active.'));
+      import '../lib/analytics';
+    </script>
+  </body>
+</html>
+

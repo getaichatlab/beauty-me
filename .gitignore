@@ -1,0 +1,11 @@
+node_modules/
+.npm-cache/
+dist/
+.astro/
+.netlify/
+.env
+.env.*
+!.env.example
+test-results/
+.local-admin/
+LOCAL_ADMIN_ACCESS.md

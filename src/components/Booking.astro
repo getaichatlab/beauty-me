@@ -1,0 +1,70 @@
+---
+import {services as initialservices,ui as initialui,route,type Lang} from '../data/content';
+import {brand as initialbrand} from '../config/brand';
+const managedContent=Astro.locals.content;
+const services=(managedContent?.services||initialservices).filter((item:any)=>item.active!==false) as typeof initialservices;
+const ui=(managedContent?.ui||initialui) as typeof initialui;
+const brand=(managedContent?.brand||initialbrand) as typeof initialbrand;
+
+interface Props {lang:Lang}
+const {lang}=Astro.props;const t=ui[lang];
+---
+<section class="booking-layout section"><div class="booking-intro"><p class="eyebrow">{brand.name} / {t.book}</p><h1>{t.bookTitle}</h1><p>{brand.bookingMode==='request'?(lang==='uz'?'Xizmat va istalgan vaqtingizni tanlang. Salon so‘rovingizni ko‘rib, siz bilan bog‘lanadi.':'Выберите услугу и желаемое время. Салон рассмотрит заявку и свяжется с вами.'):t.bookText}</p><div class="demo-note" hidden={brand.bookingMode==='request'}><span aria-hidden="true">↗</span><p>{t.demoLong}</p></div><a class="text-link" href={`tel:${brand.phoneHref}`}>{t.call} <span>↗</span></a></div>
+  <div class="booking-panel" data-booking data-request-mode={brand.bookingMode==='request'?'true':'false'} data-required={t.required} data-phone-error={t.phoneError} data-date-error={t.dateError}>
+    <ol class="steps"><li aria-current="step"><span>01</span>{t.step1}</li><li><span>02</span>{t.step2}</li><li><span>03</span>{t.step3}</li></ol>
+    <p class="booking-selection" data-selection hidden></p>
+    <form id="booking-form" novalidate>
+      <fieldset data-step="0"><legend>{t.pickService}</legend><div class="service-options">{services.map(s=><label class="service-choice"><input type="radio" name="service" value={s.id} required/><span>{s.label[lang]}</span><span aria-hidden="true">↗</span></label>)}<label class="service-choice"><input type="radio" name="service" value="consultation"/><span>{t.consultation}</span><span aria-hidden="true">↗</span></label></div></fieldset>
+      <fieldset data-step="1" hidden><legend>{t.step2}</legend><label class="field">{t.date}<input type="date" name="date" required/></label><label class="field">{t.time}<select name="time"><option value="anytime">{t.anytime}</option><option value="morning">{t.morning}</option><option value="afternoon">{t.afternoon}</option><option value="evening">{t.evening}</option></select></label><p class="muted">{lang==='uz'?'Sana va vaqt faqat tanlov. Bo‘sh vaqtni salon tasdiqlashi kerak.':'Дата и время — пожелание. Доступность подтверждает салон.'}</p></fieldset>
+      <fieldset data-step="2" hidden><legend>{t.step3}</legend><label class="field">{t.name}<input name="name" autocomplete="given-name" maxlength="70" required/></label><label class="field">{t.phone}<input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="+998 __ ___ __ __" maxlength="25" required/></label><label class="field">{t.note}<textarea name="note" rows="3" maxlength="500" placeholder={t.notePlaceholder}></textarea></label><p class="muted" hidden={brand.bookingMode==='request'}>{t.doneText}</p>{brand.bookingMode==='request'&&<label class="booking-consent"><input type="checkbox" name="consent" required/><span>{lang==='uz'?'Salon bog‘lanishi uchun ma’lumotlarim saqlanishiga roziman.':'Согласен на сохранение данных для связи с салоном.'}</span></label>}<input name="website" class="booking-trap" tabindex="-1" autocomplete="off" aria-hidden="true"/></fieldset>
+      <div class="booking-actions"><p id="booking-error" class="form-error" role="alert" aria-live="polite"></p><div class="booking-controls"><button type="button" class="back-button" hidden>{t.back}</button><button type="button" class="button next-button">{t.next} ↗</button><button type="submit" class="button submit-button" hidden>{brand.bookingMode==='request'?(lang==='uz'?'So‘rovni yuborish':'Отправить заявку'):t.submit} ↗</button></div></div><button type="button" class="test-data" hidden={brand.bookingMode==='request'}>{t.testData}</button>
+    </form>
+    <div class="booking-result" hidden tabindex="-1"><p class="eyebrow">{brand.bookingMode==='request'?'REQUEST':'DEMO'}</p><h2>{brand.bookingMode==='request'?(lang==='uz'?'So‘rovingiz qabul qilindi.':'Заявка принята.'):t.doneTitle}</h2><p>{brand.bookingMode==='request'?(lang==='uz'?'Salon siz bilan bog‘lanib, vaqtni tasdiqlaydi.':'Салон свяжется с вами и подтвердит время.'):t.doneText}</p><dl class="booking-summary"><dt>{t.step1}</dt><dd data-summary="service"></dd><dt>{t.date}</dt><dd data-summary="date"></dd><dt>{t.time}</dt><dd data-summary="time"></dd></dl>{brand.bookingMode==='demo'&&<div class="booking-admin-demo" hidden data-admin-demo><p>{lang==='uz'?'Endi administrator tomonidan ko‘ring: faqat xizmat va vaqt bilan namuna yaratildi. Ism, telefon va izoh saqlanmadi.':'Посмотрите со стороны администратора: сохранены только услуга и время. Имя, телефон и комментарий не сохранены.'}</p><a class="button" href="/admin/demo/?view=leads">{lang==='uz'?'So‘rovni admin panelda ko‘rish':'Посмотреть заявку в панели'} ↗</a></div>}<p>{t.contactSalon}</p><div class="button-row"><a class="button" href={`tel:${brand.phoneHref}`}>{t.call} ↗</a><a class="button outline" href={brand.telegram} target="_blank" rel="noopener noreferrer">{lang==='uz'?'Telegram guruhi':'Группа Telegram'} ↗</a></div><a class="text-link" href={route(lang,'booking')}>{t.newBooking} ↗</a></div>
+  </div>
+</section>
+<script>
+  import {localDate,validPhone,formatDate} from '../lib/booking';
+  import {track,trackedSession} from '../lib/analytics';
+  import {writeDemoBooking} from '../lib/demo-journey';
+  function initBooking(){
+  const panel=document.querySelector<HTMLElement>('[data-booking]');
+  if(panel){
+    if(panel.dataset.initialized)return;
+    panel.dataset.initialized='true';
+    const form=panel.querySelector<HTMLFormElement>('form')!;
+    const fields=Array.from(form.querySelectorAll<HTMLFieldSetElement>('fieldset'));
+    const next=form.querySelector<HTMLButtonElement>('.next-button')!;
+    const back=form.querySelector<HTMLButtonElement>('.back-button')!;
+    const submit=form.querySelector<HTMLButtonElement>('.submit-button')!;
+    const error=form.querySelector<HTMLElement>('.form-error')!;
+    const date=form.elements.namedItem('date') as HTMLInputElement;
+    date.min=localDate(); let step=0; let requestId=crypto.randomUUID();let started=false;form.addEventListener('change',()=>{if(!started){started=true;track('booking_start');}});
+    const from=new URLSearchParams(location.search).get('service');
+    const preselected=Array.from(form.querySelectorAll<HTMLInputElement>('input[name=service]')).find(i=>i.value===from);if(preselected)preselected.checked=true;
+    const selection=panel.querySelector<HTMLElement>('[data-selection]');const updateSelection=()=>{const chosen=form.querySelector<HTMLInputElement>('input[name=service]:checked');if(selection){selection.hidden=!chosen||step===0;selection.textContent=chosen?.closest('label')?.querySelector('span')?.textContent||'';}};form.addEventListener('change',updateSelection);
+    const render=()=>{fields.forEach((f,i)=>{f.hidden=i!==step;f.classList.remove('step-enter');});fields[step].classList.add('step-enter');panel.querySelectorAll('.steps li').forEach((li,i)=>{if(i===step)li.setAttribute('aria-current','step');else li.removeAttribute('aria-current');li.classList.toggle('complete',i<step);});back.hidden=step===0;next.hidden=step===2;submit.hidden=step!==2;error.textContent='';updateSelection();const heading=fields[step].querySelector<HTMLElement>('legend');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});if(window.matchMedia('(max-width:650px)').matches&&typeof panel.scrollIntoView==='function')panel.scrollIntoView({block:'start',behavior:'instant'});}};
+    const validate=()=>{let message='';let invalid:HTMLElement|null=null;
+      if(step===0&&!form.querySelector('input[name=service]:checked')){message=panel.dataset.required||'';invalid=fields[0].querySelector('input');}
+      if(step===1&&(!date.value||date.value<localDate())){message=date.value?panel.dataset.dateError||'':panel.dataset.required||'';invalid=date;}
+      if(step===2){const name=form.elements.namedItem('name') as HTMLInputElement;const phone=form.elements.namedItem('phone') as HTMLInputElement;if(!name.value.trim()){message=panel.dataset.required||'';invalid=name;}else if(!validPhone(phone.value)){message=panel.dataset.phoneError||'';invalid=phone;}}
+      form.querySelectorAll('[aria-invalid]').forEach(i=>{i.removeAttribute('aria-invalid');i.removeAttribute('aria-describedby');});error.textContent=message;if(invalid){invalid.setAttribute('aria-invalid','true');invalid.setAttribute('aria-describedby','booking-error');invalid.focus();}return !message;
+    };
+    next.addEventListener('click',()=>{if(validate()){step++;render();track('booking_step',String(step));}});back.addEventListener('click',()=>{step--;render();});
+    form.querySelector('.test-data')?.addEventListener('click',()=>{const first=form.querySelector<HTMLInputElement>('input[name=service]')!;if(!form.querySelector('input[name=service]:checked'))first.checked=true;date.value=localDate();(form.elements.namedItem('name') as HTMLInputElement).value='Demo';(form.elements.namedItem('phone') as HTMLInputElement).value='+998 90 000 00 00';error.textContent='';});
+    form.addEventListener('submit',async e=>{e.preventDefault();if(step!==2){if(validate()){step++;render();}return;}if(!validate())return;
+      if(panel.dataset.requestMode==='true'){
+        const consent=form.elements.namedItem('consent') as HTMLInputElement;if(!consent?.checked){error.textContent=document.documentElement.lang==='ru'?'Подтвердите согласие.':'Rozilikni belgilang.';consent?.focus();return;}
+        if(submit.disabled)return;submit.disabled=true;
+        try{const data=new FormData(form);const params=new URLSearchParams(location.search);const utm=Object.fromEntries(['utm_source','utm_medium','utm_campaign','utm_content'].map(k=>[k,params.get(k)||'']).filter(([,v])=>v));
+          const response=await fetch('/api/leads/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId,name:data.get('name'),phone:data.get('phone'),service:data.get('service'),date:data.get('date'),time:data.get('time'),note:data.get('note')||'',website:data.get('website')||'',lang:document.documentElement.lang==='ru'?'ru':'uz',consent:true,sessionId:trackedSession(),utm})});
+          const body=await response.json();if(!response.ok)throw new Error(body.error||'So‘rov yuborilmadi.');
+        }catch(err){error.textContent=err instanceof Error?err.message:'Tarmoq xatosi. Qayta urinib ko‘ring.';submit.disabled=false;return;}
+      }
+      const result=panel.querySelector<HTMLElement>('.booking-result')!;const selected=form.querySelector<HTMLInputElement>('input[name=service]:checked')!;const time=form.elements.namedItem('time') as HTMLSelectElement;
+      result.querySelector('[data-summary=service]')!.textContent=selected.closest('label')?.querySelector('span')?.textContent||'';result.querySelector('[data-summary=date]')!.textContent=formatDate(date.value,document.documentElement.lang==='ru'?'ru':'uz');result.querySelector('[data-summary=time]')!.textContent=time.selectedOptions[0].textContent;
+      if(panel.dataset.requestMode!=='true'){const saved=writeDemoBooking({service:selected.value,date:date.value,time:time.value});const demoLink=panel.querySelector<HTMLElement>('[data-admin-demo]');if(demoLink)demoLink.hidden=!saved;}if(selection)selection.hidden=true;form.reset();form.hidden=true;panel.querySelector<HTMLElement>('.steps')!.hidden=true;result.hidden=false;result.focus();
+    });
+  }
+  }
+  document.addEventListener('astro:page-load',initBooking);
+</script>

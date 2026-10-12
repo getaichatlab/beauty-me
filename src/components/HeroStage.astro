@@ -1,0 +1,21 @@
+---
+import {brand as initialbrand} from '../config/brand';
+import {media as initialmedia} from '../data/media';
+import {ui as initialui,route,type Lang} from '../data/content';
+import Photo from './Photo.astro';
+const managedContent=Astro.locals.content;
+const brand=(managedContent?.brand||initialbrand) as typeof initialbrand;
+const media=(managedContent?.media||initialmedia).filter((item:any)=>item.active!==false) as typeof initialmedia;
+const ui=(managedContent?.ui||initialui) as typeof initialui;
+
+interface Props {lang:Lang}
+const {lang}=Astro.props;const t=ui[lang];
+const main=media.find(m=>m.id===brand.heroMediaId)||media[0];
+const accents=(managedContent?.heroAccents||['nude-manicure']).map(id=>media.find(m=>m.id===id)).filter((m):m is NonNullable<typeof m>=>!!m&&m.id!==main?.id);
+const words=managedContent?.heroWords[lang]||(lang==='uz'?['Sizga mos obraz.','Bir salonda.']:['Ваш образ.','В одном салоне.']);
+---
+<section class="hero-stage section" data-hero>
+  <div class="hero-editorial"><p class="eyebrow hero-kicker"><span class="live-dot" aria-hidden="true"></span>{brand.city[lang]} / {brand.district[lang]}</p><h1 class="hero-title">{words.map((word,i)=><span class:list={['hero-line',{'italic':i===1}]}>{word}</span>)}</h1><p class="hero-description">{t.heroText}</p><div class="button-row"><a class="button" href={route(lang,'booking')} data-magnet>{t.book}<span aria-hidden="true">↗</span></a><a class="text-link" href={route(lang,'gallery')}>{t.seeWork}<span aria-hidden="true">↗</span></a></div><div class="hero-footnote"><span>01 — {t.heroTop}</span><span class="hero-hairline"></span><a href="#services" aria-label={t.navServices}>↓</a></div></div>
+  <div class="hero-art"><div class="hero-orbit" aria-hidden="true"></div><div class="hero-main-frame" data-image-reveal>{main?<Photo item={main} lang={lang} eager sizes="(max-width: 650px) 300px, (max-width: 1024px) 360px, 450px"/>:<div class="type-art">{brand.monogram}<em>{brand.monogramSuffix}</em></div>}<span class="image-curtain" aria-hidden="true"></span><span class="photo-index">{brand.name.toUpperCase()} / 01</span></div>{accents.map((m,i)=><a class={`hero-accent hero-accent-${i+1}`} href={route(lang,'gallery')} aria-label={`${m.title[lang]} — ${t.navWork}`} data-hero-accent><Photo item={m} lang={lang} sizes="160px"/><span>{i===0?'02':'03'} / {m.title[lang]}<span aria-hidden="true">↗</span></span></a>)}<span class="hero-art-note">{lang==='uz'?'SIZNING USLUBINGIZ.':'ВАШ СОБСТВЕННЫЙ СТИЛЬ.'}</span><span class="hero-star" aria-hidden="true">✳</span></div>
+  <div class="hero-brand-outline" aria-hidden="true">{brand.name}</div>
+</section>

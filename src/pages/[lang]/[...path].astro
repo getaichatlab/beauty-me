@@ -1,0 +1,49 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Gallery from '../../components/Gallery.astro';
+import Services from '../../components/Services.astro';
+import HeroStage from '../../components/HeroStage.astro';
+import Contact from '../../components/Contact.astro';
+import Booking from '../../components/Booking.astro';
+import Photo from '../../components/Photo.astro';
+import Team from '../../components/Team.astro';
+import SalonProof from '../../components/SalonProof.astro';
+import {services as initialservices,ui as initialui,faq as initialfaq,route,type Lang} from '../../data/content';
+import {media as initialmedia} from '../../data/media';
+import {brand as initialbrand} from '../../config/brand';
+const managedContent=Astro.locals.content;
+const services=(managedContent?.services||initialservices).filter((item:any)=>item.active!==false) as typeof initialservices;
+const ui=(managedContent?.ui||initialui) as typeof initialui;
+const faq=(managedContent?.faq||initialfaq) as typeof initialfaq;
+const media=(managedContent?.media||initialmedia).filter((item:any)=>item.active!==false) as typeof initialmedia;
+const brand=(managedContent?.brand||initialbrand) as typeof initialbrand;
+
+export function getStaticPaths(){return (['uz','ru'] as const).flatMap(lang=>[undefined,'services','gallery','about','contact','booking','privacy',...initialservices.map(s=>`services/${s.id}`)].map(path=>({params:{lang,path}})));}
+if(!['uz','ru'].includes(Astro.params.lang||''))return Astro.redirect('/404.html');
+const lang=Astro.params.lang as Lang;const path=Astro.params.path||'';const t=ui[lang];
+const service=services.find(s=>path===`services/${s.id}`);
+if(!['','services','gallery','about','contact','booking','privacy'].includes(path)&&!service)return new Response('Sahifa topilmadi.',{status:404});
+const title=service?.label[lang]||({'':t.home,services:t.navServices,gallery:t.navWork,about:t.navAbout,contact:t.navContact,booking:t.book,privacy:t.privacy} as Record<string,string>)[path];
+const hero=media.find(m=>m.id===brand.heroMediaId)||media.find(m=>m.category==='hair')||media[0];const atmosphere=media.find(m=>m.category==='interior')||media.find(m=>m.id!==hero?.id);
+const questions=service?service.faq.map(f=>({q:f.q[lang],a:f.a[lang]})):faq[lang];
+---
+<Layout lang={lang} title={title} path={path} description={service?.intro[lang]}>
+  {path===''&&<>
+    <HeroStage lang={lang}/>
+    <div class="service-ribbon" aria-hidden="true">{services.slice(0,5).map(s=><><span>{s.label[lang]}</span><span class="ribbon-star">✳</span></>)}</div>
+    <section class="section services-section" id="services"><div class="section-heading"><div><p class="eyebrow">01 / {t.navServices}</p><h2 data-split class="lines">{t.serviceTitle}</h2></div><p>{t.serviceText}</p></div><Services lang={lang}/></section>
+    <section class="section work-section"><div class="section-heading"><div><p class="eyebrow">02 / {t.galleryTop}</p><h2 data-split>{t.galleryTitle}</h2></div><a class="text-link" href={route(lang,'gallery')}>{t.moreWork} <span>↗</span></a></div><Gallery lang={lang} limit={4} preview/></section>
+    <SalonProof lang={lang}/><Team lang={lang} preview/><Contact lang={lang} compact questions={questions.slice(0,3)}/>
+  </>}
+  {path==='services'&&<><section class="section page-heading"><p class="eyebrow">{brand.name} / {t.navServices}</p><h1 data-split>{t.serviceListTitle}</h1><p>{t.serviceText}</p></section><section class="section catalog"><Services lang={lang}/></section><Contact lang={lang}/></>}
+  {service&&<><section class="section service-hero"><div><a class="breadcrumb" href={route(lang,'services')}>← {t.navServices}</a><p class="eyebrow">{service.number} / {service.label[lang]}</p><h1 data-split>{service.headline[lang]}</h1><p class="intro">{service.intro[lang]}</p>{managedContent?.services.find(s=>s.id===service.id)?.price?.[lang]&&<p class="service-price">{managedContent.services.find(s=>s.id===service.id)!.price![lang]}</p>}<div class="button-row"><a class="button" href={`${route(lang,'booking')}?service=${service.id}`}>{t.book} ↗</a><a class="text-link" href={`tel:${brand.phoneHref}`}>{t.price} ↗</a></div></div><div class="service-feature-image" data-service-feature={service.id} style={`view-transition-name:service-${service.id}`}>{media.find(m=>m.category===service.id)?<Photo item={media.find(m=>m.category===service.id)!} lang={lang} eager/>:<div class="service-type" aria-hidden="true"><span>{service.number}</span><em>{service.label[lang]}</em><small>{lang==='uz'?'Sizga mos yo‘nalishni konsultatsiyada tanlang.':'Выберите подходящий уход на консультации.'}</small></div>}</div></section><section class="section service-included"><p class="eyebrow">{t.included}</p><div>{service.items[lang].map((item,i)=><div class="included-row"><span>0{i+1}</span><h3>{item}</h3><a href={`tel:${brand.phoneHref}`} aria-label={`${item}: ${t.price}`}>↗</a></div>)}<p class="muted">{lang==='uz'?'Narx va xizmat mavjudligini salon bilan aniqlashtiring.':'Стоимость и доступность уточните в салоне.'}</p></div></section>{media.some(m=>m.category===service.id)&&<section class="section work-section"><h2 data-split>{t.related}</h2><Gallery lang={lang} category={service.id}/></section>}<section class="section faq-section"><h2 data-split>{t.faqTitle}</h2><div class="faq-list">{questions.map(q=><details><summary>{q.q}<span aria-hidden="true">+</span></summary><p>{q.a}</p></details>)}</div></section><Contact lang={lang}/></>}
+  {path==='gallery'&&<><section class="section page-heading"><p class="eyebrow">{brand.name} / {t.galleryTop}</p><h1 data-split>{t.galleryPageTitle}</h1><p>{t.galleryText}</p><a class="text-link" href={brand.instagram} target="_blank" rel="noopener noreferrer">@{brand.instagramHandle} ↗</a></section><section class="section gallery-page"><Gallery lang={lang} filters/></section><Contact lang={lang}/></>}
+  {path==='about'&&<><section class="section page-heading"><p class="eyebrow">{t.aboutTop}</p><h1 class="lines">{t.aboutPageTitle}</h1></section><section class="section about-feature about-page"><div class="about-visual">{atmosphere?<Photo item={atmosphere} lang={lang} eager/>:<div class="about-wordmark" aria-hidden="true"><span>Beauty</span><em>Me.</em></div>}</div><div class="about-copy"><p class="intro">{t.aboutPageText}</p><p>{t.aboutText}</p><a class="button" href={route(lang,'services')}>{t.navServices} ↗</a></div></section><Contact lang={lang}/></>}
+  {path==='contact'&&<><div class="contact-page"><Contact lang={lang} primary/></div><section class="section visit-card"><p class="eyebrow">{brand.district.uz.toUpperCase()} / {brand.city.uz.toUpperCase()}</p><h2 data-split>{brand.address[lang]}</h2><p>{brand.addressNote[lang]}</p><a class="button outline" href={brand.map} target="_blank" rel="noopener noreferrer">{t.directions} ↗</a></section></>}
+  {path==='about'&&<Team lang={lang}/>}
+  {path==='booking'&&<Booking lang={lang}/>}
+  {path==='privacy'&&<section class="section prose"><p class="eyebrow">{brand.name} / DEMO</p><h1 data-split>{t.privacyTitle}</h1><p>{t.privacyText}</p><a class="text-link" href={route(lang)}>{t.returnHome} ↗</a></section>}
+</Layout>
+
+
+

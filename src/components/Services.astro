@@ -1,0 +1,9 @@
+---
+import ServiceExplorer from './ServiceExplorer.astro';
+import type {Lang} from '../data/content';
+
+
+interface Props {lang:Lang}
+const {lang}=Astro.props;
+---
+<ServiceExplorer lang={lang}/>

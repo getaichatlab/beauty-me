@@ -1,0 +1,18 @@
+{
+  "site_id": "d284f609-4bee-4a10-a2df-a43e060f36a5",
+  "deploy_id": "6ac914a02137679d4dbaca70",
+  "version": "final-editorial-polish-with-same-tab-demo-journey",
+  "previous_deploy_id": "6ac8cc587693202a4fa4404a",
+  "site_url": "https://beauty-me-tashkent-demo.netlify.app",
+  "dashboard": "https://app.netlify.com/projects/beauty-me-tashkent-demo",
+  "claimed": true,
+  "published_at": "2026-10-09T16:23:17.080Z",
+  "public_demo": "https://beauty-me-tashkent-demo.netlify.app/uz/",
+  "admin_url": "https://beauty-me-tashkent-demo.netlify.app/admin/",
+  "admin_mode": "public-browser-sandbox",
+  "booking_mode": "demo",
+  "verification": "test-results/client-polish/verification.json",
+  "admin_demo_url": "https://beauty-me-tashkent-demo.netlify.app/admin/demo/",
+  "real_admin_backend": "unconfigured; Supabase required",
+  "performance": "test-results/client-polish/performance.json"
+}

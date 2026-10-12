@@ -1,0 +1,108 @@
+---
+import {media as initialmedia} from '../data/media';
+import {ui as initialui,services as initialservices,route,type Lang} from '../data/content';
+import {brand as initialbrand} from '../config/brand';
+import Photo from './Photo.astro';
+const managedContent=Astro.locals.content;
+const media=(managedContent?.media||initialmedia).filter((item:any)=>item.active!==false) as typeof initialmedia;
+const ui=(managedContent?.ui||initialui) as typeof initialui;
+const services=(managedContent?.services||initialservices).filter((item:any)=>item.active!==false) as typeof initialservices;
+const brand=(managedContent?.brand||initialbrand) as typeof initialbrand;
+interface Props {lang:Lang;category?:string;limit?:number;filters?:boolean;preview?:boolean}
+const {lang,category,limit,filters=false,preview=false}=Astro.props;const t=ui[lang];
+const items=media.filter(m=>!category||m.category===category).slice(0,limit);
+const categories=services.filter(s=>items.some(m=>m.category===s.id));
+---
+<div class="gallery-block" data-gallery data-preview={preview?'true':'false'} data-paginate={filters?'true':'false'}>
+  {filters&&items.length>0&&<div class="filters" role="group" aria-label={t.pickService}><button class="filter active" data-filter="all" aria-pressed="true">{t.all}</button>{categories.map(s=><button class="filter" data-filter={s.id} aria-pressed="false">{s.label[lang]}</button>)}</div>}
+  {filters&&items.length>0&&<p class="gallery-count" role="status" aria-live="polite" data-count data-unit={lang==='uz'?'ta ish':'работ'}>{items.length} {lang==='uz'?'ta ish':'работ'}</p>}
+  {items.length>0?<><div class:list={['gallery-grid',{'gallery-preview':preview}]} data-gallery-track tabindex={preview?0:undefined} role={preview?'group':undefined} aria-label={preview?t.navWork:undefined}>{items.map(m=><figure data-category={m.category}><button class="photo-button" data-src={m.src} data-alt={m.alt[lang]} data-title={m.title[lang]} aria-label={m.title[lang]+' — '+(lang==='uz'?'kattalashtirish':'увеличить')}><Photo item={m} lang={lang} sizes={preview?'(max-width:650px) 70vw, (max-width:1100px) 28vw, 350px':'(max-width:650px) 45vw, (max-width:1100px) 28vw, 300px'}/><span class="zoom" aria-hidden="true">↗</span></button><figcaption>{m.title[lang]}<span>{services.find(s=>s.id===m.category)?.label[lang]||t.navAbout}</span></figcaption></figure>)}</div>{preview&&<div class="gallery-tools"><span data-slide-count role="status" aria-live="polite">01 / {Math.min(items.length,4)}</span><div><button type="button" data-slide-prev aria-label={t.previous}>←</button><button type="button" data-slide-next aria-label={t.nextImage}>→</button></div></div>}{filters&&<button type="button" class="button outline gallery-more" data-gallery-more hidden>{lang==='uz'?'Yana ko‘rish':'Показать ещё'} <span aria-hidden="true">↓</span></button>}</>:<div class="instagram-feature"><div class="instagram-symbol" aria-hidden="true">{brand.monogram}.</div><div><p class="eyebrow">@{brand.instagramHandle}</p><h3>{t.galleryNoPhoto}</h3><a class="text-link" href={brand.instagram} target="_blank" rel="noopener noreferrer">{t.instagram}<span aria-hidden="true">↗</span></a></div></div>}
+  <dialog class="lightbox" aria-label={t.navWork} data-booking-url={route(lang,'booking')} data-about-url={route(lang,'about')} data-book-label={lang==='uz'?'Shu xizmatga yozilish':'Записаться на эту услугу'} data-about-label={t.aboutLink} data-loading-label={lang==='uz'?'Sifatli rasm yuklanmoqda…':'Загружаем фото…'} data-error-label={lang==='uz'?'Katta rasm yuklanmadi. Qayta urinib ko‘ring.':'Фото не загрузилось. Попробуйте ещё раз.'}><button class="lightbox-close" aria-label={t.close}>×</button><button class="lightbox-prev" aria-label={t.previous}>←</button><figure><img alt="" draggable="false"/><figcaption tabindex="0"></figcaption><div class="lightbox-actions"><p role="status" data-image-status></p><button type="button" class="lightbox-retry" hidden>{lang==='uz'?'Qayta urinish':'Повторить'}</button><a class="lightbox-book button light" href={route(lang,'booking')}>{t.book} ↗</a></div></figure><button class="lightbox-next" aria-label={t.nextImage}>→</button></dialog>
+</div>
+<script>
+  function initGalleries(){
+    document.querySelectorAll<HTMLElement>('[data-gallery]').forEach(gallery=>{
+      if(gallery.dataset.initialized)return;gallery.dataset.initialized='true';
+      const controller=new AbortController();const {signal}=controller;
+      const dialog=gallery.querySelector<HTMLDialogElement>('dialog');
+      const image=dialog?.querySelector('img');const caption=dialog?.querySelector('figcaption');
+      const status=dialog?.querySelector<HTMLElement>('[data-image-status]');const retry=dialog?.querySelector<HTMLButtonElement>('.lightbox-retry');const booking=dialog?.querySelector<HTMLAnchorElement>('.lightbox-book');
+      const track=gallery.querySelector<HTMLElement>('[data-gallery-track]');
+      const figures=[...gallery.querySelectorAll<HTMLElement>('figure[data-category]')];
+      const more=gallery.querySelector<HTMLButtonElement>('[data-gallery-more]');
+      const compact=window.matchMedia('(max-width:650px)');
+      const tablet=window.matchMedia('(max-width:1100px)');
+      const reduced=window.matchMedia('(prefers-reduced-motion:reduce)');
+      const preview=gallery.dataset.preview==='true',paginate=gallery.dataset.paginate==='true';
+      const pageSize=()=>compact.matches?6:tablet.matches?9:12;
+      let limit=pageSize(),filter='all',index=0,slide=0,expanded=false;
+      let active:HTMLButtonElement|null=null;let motions:Animation[]=[];
+      let imageVersion=0;
+      const matching=()=>figures.filter(f=>(filter==='all'||f.dataset.category===filter)&&(!preview||!compact.matches||figures.indexOf(f)<4));
+      const pool=()=>matching().map(f=>f.querySelector<HTMLButtonElement>('.photo-button')!);
+      const animate=(element:Element,keyframes:Keyframe[],duration:number)=>{
+        if(reduced.matches||typeof element.animate!=='function')return;
+        motions=motions.filter(a=>a.playState==='running');motions.push(element.animate(keyframes,{duration,easing:'ease-out'}));
+      };
+      const show=(i:number)=>{
+        const list=pool();if(!list.length)return;index=(i+list.length)%list.length;const b=list[index];
+        const version=++imageVersion;
+        if(retry)retry.hidden=true;if(status)status.textContent=dialog?.dataset.loadingLabel||'';
+        const category=b.closest<HTMLElement>('[data-category]')?.dataset.category;
+        if(booking){booking.href=category&&category!=='interior'?`${dialog?.dataset.bookingUrl}?service=${encodeURIComponent(category)}`:dialog?.dataset.aboutUrl||'';booking.textContent=(category&&category!=='interior'?dialog?.dataset.bookLabel:dialog?.dataset.aboutLabel)+' ↗';}
+        if(image){const thumb=b.querySelector<HTMLImageElement>('img');image.src=thumb?.currentSrc||thumb?.src||b.dataset.src||'';image.alt=b.dataset.alt||'';
+          const full=new Image();full.onload=async()=>{try{await full.decode();}catch{}if(signal.aborted||version!==imageVersion)return;image.src=full.src;if(status)status.textContent='';animate(image,[{opacity:.8,transform:'scale(.992)'},{opacity:1,transform:'scale(1)'}],180);};
+          full.onerror=()=>{if(signal.aborted||version!==imageVersion)return;if(status)status.textContent=dialog?.dataset.errorLabel||'';if(retry)retry.hidden=false;};full.src=b.dataset.src||'';
+        }
+        if(caption)caption.textContent=(index+1)+' / '+list.length+' · '+(b.dataset.title||'');
+      };
+      const updateSlide=()=>{
+        if(!track)return;const list=matching();if(!list.length)return;
+        const left=track.getBoundingClientRect().left;
+        slide=list.reduce((best,f,i)=>Math.abs(f.getBoundingClientRect().left-left)<Math.abs(list[best].getBoundingClientRect().left-left)?i:best,0);
+        const counter=gallery.querySelector<HTMLElement>('[data-slide-count]');if(counter)counter.textContent=String(slide+1).padStart(2,'0')+' / '+list.length;
+        const prev=gallery.querySelector<HTMLButtonElement>('[data-slide-prev]'),next=gallery.querySelector<HTMLButtonElement>('[data-slide-next]');
+        if(prev)prev.disabled=track.scrollLeft<=2;if(next)next.disabled=track.scrollLeft>=track.scrollWidth-track.clientWidth-2;
+      };
+      const render=()=>{
+        const matches=matching();
+        figures.forEach(f=>{const position=matches.indexOf(f);f.hidden=position<0||(paginate&&position>=limit);});
+        const count=gallery.querySelector<HTMLElement>('[data-count]');if(count)count.textContent=Math.min(limit,matches.length)+' / '+matches.length+' '+count.dataset.unit;
+        if(more)more.hidden=matches.length<=limit;
+        updateSlide();gallery.dispatchEvent(new CustomEvent('beautyme:layout-change',{bubbles:true}));
+      };
+      figures.forEach(f=>{const b=f.querySelector<HTMLButtonElement>('.photo-button')!;b.addEventListener('click',()=>{active=b;show(pool().indexOf(b));dialog?.showModal();if(dialog?.open)document.documentElement.classList.add('lightbox-open');},{signal});});
+      gallery.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach(button=>button.addEventListener('click',()=>{
+        motions.splice(0).forEach(a=>a.cancel());dialog?.close();filter=button.dataset.filter||'all';limit=pageSize();expanded=false;
+        gallery.querySelectorAll('[data-filter]').forEach(b=>{b.setAttribute('aria-pressed',String(b===button));b.classList.toggle('active',b===button);});
+        render();figures.filter(f=>!f.hidden).forEach(f=>animate(f,[{opacity:.5,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],220));
+      },{signal}));
+      more?.addEventListener('click',()=>{const old=limit;limit+=pageSize();expanded=true;render();matching()[old]?.querySelector<HTMLButtonElement>('button')?.focus({preventScroll:true});},{signal});
+      const moveSlide=(offset:number)=>{
+        if(!track)return;const list=matching();const next=Math.max(0,Math.min(list.length-1,slide+offset));
+        if(list[next])track.scrollTo({left:list[next].offsetLeft-list[0].offsetLeft,behavior:reduced.matches?'auto':'smooth'});
+      };
+      gallery.querySelector('[data-slide-prev]')?.addEventListener('click',()=>moveSlide(-1),{signal});
+      gallery.querySelector('[data-slide-next]')?.addEventListener('click',()=>moveSlide(1),{signal});
+      track?.addEventListener('scroll',updateSlide,{signal,passive:true});
+      track?.addEventListener('keydown',event=>{if(preview&&event.target===track&&['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();moveSlide(event.key==='ArrowRight'?1:-1);}},{signal});
+      const resize=()=>{if(!expanded)limit=pageSize();if(dialog?.open)dialog.close();render();};
+      compact.addEventListener('change',resize,{signal});tablet.addEventListener('change',resize,{signal});
+      dialog?.querySelector('.lightbox-close')?.addEventListener('click',()=>dialog.close(),{signal});
+      dialog?.querySelector('.lightbox-prev')?.addEventListener('click',()=>show(index-1),{signal});
+      dialog?.querySelector('.lightbox-next')?.addEventListener('click',()=>show(index+1),{signal});
+      retry?.addEventListener('click',()=>show(index),{signal});
+      dialog?.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'){event.preventDefault();show(index-1);}if(event.key==='ArrowRight'){event.preventDefault();show(index+1);}},{signal});
+      let swipe:{x:number;y:number}|null=null;
+      image?.addEventListener('pointerdown',event=>{if(event.pointerType==='touch'&&event.isPrimary)swipe={x:event.clientX,y:event.clientY};},{signal,passive:true});
+      image?.addEventListener('pointercancel',()=>swipe=null,{signal,passive:true});
+      image?.addEventListener('pointerup',event=>{if(!swipe)return;const dx=event.clientX-swipe.x,dy=event.clientY-swipe.y;swipe=null;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.5)show(index+(dx<0?1:-1));},{signal,passive:true});
+      dialog?.addEventListener('close',()=>{imageVersion++;document.documentElement.classList.remove('lightbox-open');if(active&&!active.closest('figure')?.hidden)active.focus({preventScroll:true});},{signal});
+      dialog?.addEventListener('click',event=>{if(event.target!==dialog)return;const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();},{signal});
+      document.addEventListener('astro:before-swap',()=>{motions.forEach(a=>a.cancel());dialog?.close();controller.abort();document.documentElement.classList.remove('lightbox-open');},{once:true,signal});
+      render();
+    });
+  }
+  document.addEventListener('astro:page-load',initGalleries);
+  if(document.readyState!=='loading')initGalleries();
+</script>

@@ -1,0 +1,17 @@
+---
+import Photo from './Photo.astro';
+import {media as initialMedia} from '../data/media';
+import {brand as initialBrand} from '../config/brand';
+import {ui as initialUi,route,type Lang} from '../data/content';
+const {lang}=Astro.props as {lang:Lang};
+const content=Astro.locals.content;
+const media=(content?.media||initialMedia) as typeof initialMedia;
+const brand=content?.brand||initialBrand;
+const t=(content?.ui||initialUi)[lang];
+const photo=media.find(m=>m.category==='interior'&&m.active!==false);
+---
+<section class="section salon-proof">
+  <div class="salon-proof-heading"><p class="eyebrow">03 / {t.aboutTop}</p><h2 data-split>{t.aboutTitle}</h2><p>{t.aboutProofText||initialUi[lang].aboutProofText}</p><a class="text-link" href={route(lang,'about')}>{t.aboutLink}<span>↗</span></a><a class="text-link" href={`${route(lang,'booking')}?service=consultation`}>{t.consult}<span>↗</span></a></div>
+  {photo&&<figure class="salon-proof-photo"><Photo item={photo} lang={lang} sizes="(max-width:650px) 35vw, 260px"/><figcaption>{lang==='uz'?'Salon hayotidan · Instagram':'Жизнь салона · Instagram'}</figcaption></figure>}
+  <aside class="salon-review"><span class="review-mark" aria-hidden="true">“</span><p class="eyebrow">{lang==='uz'?'MIJOZ FIKRI':'МНЕНИЕ ГОСТЯ'}</p><p class="review-copy">{t.aboutReviewText||initialUi[lang].aboutReviewText}</p><p class="review-by">{t.aboutReviewBy||initialUi[lang].aboutReviewBy}</p><a class="text-link" href={`${brand.map}reviews/`} target="_blank" rel="noopener noreferrer">{t.aboutReviewSource||initialUi[lang].aboutReviewSource}<span>↗</span></a></aside>
+</section>

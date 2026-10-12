@@ -1,0 +1,23 @@
+[
+  {
+    "file": "renders/slide-5.png",
+    "decodedUrls": [
+      "https://beauty-me-tashkent-demo.netlify.app/admin/demo/",
+      "https://beauty-me-tashkent-demo.netlify.app/uz/"
+    ]
+  },
+  {
+    "file": "pdf-renders/page-5.png",
+    "decodedUrls": [
+      "https://beauty-me-tashkent-demo.netlify.app/admin/demo/",
+      "https://beauty-me-tashkent-demo.netlify.app/uz/"
+    ]
+  },
+  {
+    "file": "final-renders/slide-5.png",
+    "decodedUrls": [
+      "https://beauty-me-tashkent-demo.netlify.app/admin/demo/",
+      "https://beauty-me-tashkent-demo.netlify.app/uz/"
+    ]
+  }
+]

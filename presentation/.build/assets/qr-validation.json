@@ -1,0 +1,16 @@
+[
+  {
+    "name": "site",
+    "url": "https://beauty-me-tashkent-demo.netlify.app/uz/",
+    "modules": 33,
+    "quietZoneModules": 4,
+    "pixels": 492
+  },
+  {
+    "name": "admin",
+    "url": "https://beauty-me-tashkent-demo.netlify.app/admin/demo/",
+    "modules": 33,
+    "quietZoneModules": 4,
+    "pixels": 492
+  }
+]

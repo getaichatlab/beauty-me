@@ -1,0 +1,11 @@
+---
+import type { MediaItem } from '../data/media';
+import {media as builtInMedia} from '../data/media';
+interface Props { item:MediaItem; lang:'uz'|'ru'; eager?:boolean; class?:string; sizes?:string }
+const {item,lang,eager=false,class:className='',sizes='(max-width: 650px) 90vw, (max-width: 1100px) 45vw, 560px'}=Astro.props;
+// Only bundled photographs have this derivative; uploaded media keeps its existing URLs.
+const sources=[`${item.src480||item.src.replace('.webp','-480.webp')} ${Math.min(480,item.width)}w`];
+if(item.width>480&&builtInMedia.some(photo=>photo.src===item.src))sources.push(`${item.src.replace('.webp','-960.webp')} ${Math.min(960,item.width)}w`);
+sources.push(`${item.src} ${item.width}w`);
+---
+<img class={className} src={item.src} srcset={sources.join(', ')} sizes={sizes} alt={item.alt[lang]} width={item.width} height={item.height} loading={eager?'eager':'lazy'} decoding="async" fetchpriority={eager?'high':undefined} style={`object-position:${item.focus||'center'}`}/>

@@ -1,0 +1,8 @@
+---
+import Photo from './Photo.astro';
+import {route} from '../data/content';
+import type {MediaItem} from '../data/media';
+interface Props{lang:'uz'|'ru';preview?:boolean}
+const {lang,preview=false}=Astro.props;const content=Astro.locals.content;const all=content?.team.filter(p=>p.active)||[];const people=preview?all.slice(0,3):all;
+---
+{people.length>0&&<section class:list={['section team-section',{'home-team':preview}]}><p class="eyebrow">{lang==='uz'?'SALON JAMOASI':'КОМАНДА САЛОНА'}</p><h2 data-split>{lang==='uz'?'Sizning ustalaringiz.':'Ваши мастера.'}</h2><div class="team-grid">{people.map(p=><article>{content?.media.find(m=>m.id===p.mediaId&&m.active)&&<Photo item={content.media.find(m=>m.id===p.mediaId)! as MediaItem} lang={lang}/>}<h3>{p.name}</h3><p>{p.specialty[lang]}</p></article>)}</div>{preview&&<a class="text-link" href={route(lang,'about')}>{lang==='uz'?'Salon va ustalar':'Салон и мастера'} ↗</a>}</section>}

@@ -1,0 +1,11 @@
+---
+import {brand as initialbrand} from '../config/brand';
+import {ui as initialui,type Lang} from '../data/content';
+const managedContent=Astro.locals.content;
+const brand=(managedContent?.brand||initialbrand) as typeof initialbrand;
+const ui=(managedContent?.ui||initialui) as typeof initialui;
+
+interface Props {lang:Lang;primary?:boolean;compact?:boolean;questions?:{q:string;a:string}[]}
+const {lang,primary=false,compact=false,questions=[]}=Astro.props; const t=ui[lang]; const Heading=primary?'h1':'h2';
+---
+<section class:list={['contact-section section',{'compact-contact':compact}]}><div><p class="eyebrow">{t.contactTop}</p><Heading class="lines">{t.contactTitle}</Heading>{questions.length>0&&<div class="faq-list contact-faq">{questions.map(q=><details><summary>{q.q}<span aria-hidden="true">+</span></summary><p>{q.a}</p></details>)}</div>}</div><div class="contact-details"><p class="address">{brand.address[lang]}</p><p class="muted">{brand.addressNote[lang]}</p><a class="contact-number" href={`tel:${brand.phoneHref}`}>{brand.phone}</a><div class="button-row"><a class="button" href={`tel:${brand.phoneHref}`}>{t.call} ↗</a><a class="button outline" href={brand.map} target="_blank" rel="noopener noreferrer">{t.directions} ↗</a></div>{managedContent?.hours[lang]&&<p class="contact-hours">{managedContent.hours[lang]}</p>}<div class="social-links"><a href={brand.instagram} target="_blank" rel="noopener noreferrer">Instagram ↗</a><a href={brand.telegram} target="_blank" rel="noopener noreferrer">{lang==='uz'?'Telegram guruhi':'Группа Telegram'} ↗</a><a href={brand.map} target="_blank" rel="noopener noreferrer">{lang==='uz'?'Xaritadagi fikrlar':'Отзывы на карте'} ↗</a></div></div></section>

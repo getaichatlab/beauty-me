@@ -1,0 +1,20 @@
+---
+import {services as initialservices,ui as initialui,route,type Lang} from '../data/content';
+import {media as initialmedia} from '../data/media';
+import Photo from './Photo.astro';
+const managedContent=Astro.locals.content;
+const services=(managedContent?.services||initialservices).filter((item:any)=>item.active!==false) as typeof initialservices;
+const ui=(managedContent?.ui||initialui) as typeof initialui;
+const media=(managedContent?.media||initialmedia).filter((item:any)=>item.active!==false) as typeof initialmedia;
+
+interface Props {lang:Lang}
+const {lang}=Astro.props;const t=ui[lang];
+---
+<div class="service-explorer" data-service-explorer>
+  <span class="sr-only" role="status" aria-live="polite" data-service-status></span>
+  <div class="explorer-stage" id={`service-preview-${lang}`}>
+    {services.map((s,i)=>{const photo=media.find(m=>m.category===s.id);return <article class="explorer-panel" data-panel={s.id} hidden={i!==0}><div class="explorer-image">{photo?<Photo item={photo} lang={lang} sizes="(max-width: 650px) 90vw, 480px"/>:<div class={`service-art service-art-${s.id}`} aria-hidden="true"><span>✳</span><em>{s.number}</em></div>}<span class="explorer-badge">{s.number} / {s.label[lang]}</span></div><div class="explorer-caption"><p class="preview-full">{s.intro[lang]}</p><p class="preview-short">{s.intro[lang].split(/(?<=[.!?])\s+/)[0]}</p><div class="button-row"><a class="text-link" href={route(lang,`services/${s.id}`)} data-shared-image={s.id}>{t.details}<span aria-hidden="true">↗</span></a><a class="text-link" href={`${route(lang,'booking')}?service=${s.id}`}>{t.book}<span aria-hidden="true">↗</span></a></div></div></article>;})}
+  </div>
+  <div class="explorer-list" role="group" aria-label={t.pickService}>{services.map((s,i)=><button class:list={['explorer-choice',{'active':i===0}]} data-service={s.id} aria-pressed={i===0?'true':'false'} aria-controls={`service-preview-${lang}`}><span class="explorer-number">{s.number}</span><span class="explorer-label">{s.label[lang]}<small>{s.items[lang].join(' · ')}</small></span><span class="explorer-arrow" aria-hidden="true">↗</span></button>)}<p class="explorer-hint">{lang==='uz'?'Yo‘nalishni tanlang. O‘zingizga mosini toping.':'Выберите направление. Найдите своё.'}</p></div>
+</div>
+<noscript><div class="explorer-fallback">{services.map(s=><a class="text-link" href={route(lang,`services/${s.id}`)}>{s.label[lang]} ↗</a>)}</div></noscript>

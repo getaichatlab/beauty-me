@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+# Demo pages also carry noindex meta and X-Robots-Tag headers.
